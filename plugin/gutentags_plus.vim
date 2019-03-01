@@ -42,12 +42,17 @@ endfunc
 "----------------------------------------------------------------------
 function! s:get_gtags_file() abort
 	if !exists('b:gutentags_files')
+    execute '!echo "if !exists('b:gutentags_files')"'
 		return ''
 	endif
 	if !has_key(b:gutentags_files, 'gtags_cscope')
+    execute '!echo "if !has_key(b:gutentags_files, 'gtags_cscope')"'
 		return ''
 	endif
+    execute '!echo "I am here"'
 	let tags = b:gutentags_files['gtags_cscope']
+    execute '!echo "tags is "' . tags
+    " execute '!echo "b:gutentags_files "' . b:gutentags_files
 	if filereadable(tags)
 		return tags
 	endif
@@ -136,6 +141,8 @@ function! s:GscopeAdd() abort
 	if !filereadable(dbname)
 		call s:ErrorMsg('gtags database is not ready yet')
 		return 0
+  else
+    execute '!echo "dbname is readable and it is "' . dbname
 	endif
 	let pwd = getcwd()
 	let s:previous_pwd = get(s:, 'previous_pwd', '')
@@ -148,10 +155,21 @@ function! s:GscopeAdd() abort
 	let value = &cscopeverbose
 	let $GTAGSDBPATH = fnamemodify(dbname, ':p:h')
 	let $GTAGSROOT = root
+	" let prg = get(g:, 'gutentags_gtags_cscope_executable', 'gtags-cscope')
+	" let prg = get(g:, 'gutentags_gtags_cscope_executable', 'gtags-cscope')
 	let prg = get(g:, 'gutentags_gtags_cscope_executable', 'gtags-cscope')
-	execute 'set cscopeprg=' . fnameescape(prg)
-	set nocscopeverbose
-	silent exec 'cs kill -1'
+	" execute '!echo "set cscopeprg="' . fnameescape(prg) . " this <====="
+  execute '!echo "fnameescape(prg) is "' . fnameescape(prg) . "====]"
+  execute '!which '. fnameescape(prg)
+  execute 'set cscopeprg=' . fnameescape(prg)
+  set cscopeverbose
+	" set nocscopeverbose
+  " exec ':!cscope -b -f ' . fnameescape(dbname)
+  exec ':!' fnameescape(prg) . ' -b -i cscope.files -f ' . fnameescape(dbname)
+  silent exec 'cs kill -1'
+	" exec 'cs -b -i cscope.files kill -1'
+	" exec 'cs -b -i cscope.files'
+  execute '!echo "Adding dbname as ["' . dbname . "]"
 	exec 'cs add '. fnameescape(dbname)
 	if value != 0
 		set cscopeverbose
@@ -206,8 +224,12 @@ endfunc
 function! s:GscopeFind(bang, what, ...)
 	let keyword = (a:0 > 0)? a:1 : ''
 	let dbname = s:get_gtags_file()
+  execute '!echo ' . dbname
+  " execute '!echo ' . b:gutentags_files
 	let root = get(b:, 'gutentags_root', '')
 	if dbname == '' || root == ''
+    execute '!echo "dbname is ["' . dbname . "]"
+    execute '!echo "root is ["' . root . "]"
 		call s:ErrorMsg("no gtags database for this project, check gutentags's documents")
 		return 0
 	endif
@@ -261,16 +283,17 @@ function! s:GscopeFind(bang, what, ...)
 	" call setqflist([{'text':text}], 'a')
 	let success = 1
 	try
+		execute '!echo "cs find "'.a:what.' '.fnameescape(keyword) "===]"
 		exec 'cs find '.a:what.' '.fnameescape(keyword)
 		redrawstatus
 	catch /^Vim\%((\a\+)\)\=:E259/
-		redrawstatus
+		" redrawstatus
 		echohl ErrorMsg
 		echo "E259: not find '".keyword."'"
 		echohl NONE
 		let success = 0
 	catch /^Vim\%((\a\+)\)\=:E567/
-		redrawstatus
+		" redrawstatus
 		echohl ErrorMsg
 		echo "E567: no cscope connections"
 		echohl NONE
